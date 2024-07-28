@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        #game-container {
+            max-width: 400px;
+            padding: 20px;
+            text-align: center;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #8B5CF6;
+            margin-bottom: 20px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+            border: 2px solid #8B5CF6;
+            border-radius: 8px;
+            font-size: 18px;
+        }
+        button {
+            background-color: #8B5CF6;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .player-scores {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .turn-info {
+            background-color: #FEF3C7;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .emoji-number {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            font-size: 24px;
+        }
+        .feedback {
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .feedback.correct {
+            background-color: #D1FAE5;
+            color: #047857;
+        }
+        .feedback.incorrect {
+            background-color: #FEE2E2;
+            color: #B91C1C;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container"></div>
+
+    <script>
+        const emojis = ['🦄', '🌟', '🍎', '🤖', '🐶'];
+        let gameState = {
+            player1: { name: '', score: 0 },
+            player2: { name: '', score: 0 },
+            currentPlayer: 1,
+            num1: 0,
+            num2: 0,
+            operation: '+',
+            emoji: emojis[0],
+            userAnswer: '',
+            feedback: '',
+            turnQuestionsLeft: 3,
+            attempts: 0,
+            gameStarted: false,
+            questionCount: 0,
+        };
+
+        function renderEmojiNumber(number, emoji) {
+            return Array(number).fill().map(() => `<span>${emoji}</span>`).join('');
+        }
+
+        function renderGame() {
+            const container = document.getElementById('game-container');
+            if (!gameState.gameStarted) {
+                container.innerHTML = `
+                    <h1>Math Game</h1>
+                    <input type="text" id="player1-name" placeholder="Player 1 Name">
+                    <input type="text" id="player2-name" placeholder="Player 2 Name">
+                    <button onclick="startGame()">Start Game</button>
+                `;
+            } else {
+                const currentPlayerName = gameState.currentPlayer === 1 ? gameState.player1.name : gameState.player2.name;
+                container.innerHTML = `
+                    <h1>Math Game</h1>
+                    <div class="player-scores">
+                        <div style="font-weight: bold; color: ${gameState.currentPlayer === 1 ? 'green' : 'black'}">
+                            ${gameState.player1.name}: ${gameState.player1.score}
+                        </div>
+                        <div style="font-weight: bold; color: ${gameState.currentPlayer === 2 ? 'green' : 'black'}">
+                            ${gameState.player2.name}: ${gameState.player2.score}
+                        </div>
+                    </div>
+                    <div class="turn-info">
+                        <div style="font-weight: bold">${currentPlayerName}'s Turn</div>
+                        <div>Questions left: ${gameState.turnQuestionsLeft}</div>
+                        ${gameState.attempts === 1 ? '<div>Last attempt!</div>' : ''}
+                    </div>
+                    <div style="display: flex; justify-content: space-around; align-items: center; margin-bottom: 20px;">
+                        <div class="emoji-number">${renderEmojiNumber(gameState.num1, gameState.emoji)}</div>
+                        <div style="font-size: 24px; font-weight: bold">${gameState.operation}</div>
+                        <div class="emoji-number">${renderEmojiNumber(gameState.num2, gameState.emoji)}</div>
+                    </div>
+                    <div style="font-size: 24px; font-weight: bold; margin-bottom: 20px;">
+                        ${gameState.num1} ${gameState.operation} ${gameState.num2} = ?
+                    </div>
+                    <input type="text" id="user-answer" value="${gameState.userAnswer}" onchange="updateAnswer(this.value)">
+                    <button onclick="checkAnswer()">Check Answer</button>
+                    ${gameState.feedback ? `
+                        <div class="feedback ${gameState.feedback.includes('WELL DONE') ? 'correct' : 'incorrect'}">
+                            ${gameState.feedback}
+                        </div>
+                    ` : ''}
+                `;
+            }
+        }
+
+        function startGame() {
+            const player1Name = document.getElementById('player1-name').value;
+            const player2Name = document.getElementById('player2-name').value;
+            gameState = {
+                ...gameState,
+                player1: { ...gameState.player1, name: player1Name },
+                player2: { ...gameState.player2, name: player2Name },
+                gameStarted: true,
+            };
+            generateProblem();
+            renderGame();
+        }
+
+        function generateProblem() {
+            const operation = gameState.questionCount % 2 === 0 ? '+' : '-';
+            let num1, num2;
+            if (operation === '+') {
+                num1 = Math.floor(Math.random() * 10) + 1;
+                num2 = Math.floor(Math.random() * 10) + 1;
+            } else {
+                num1 = Math.floor(Math.random() * 10) + 1;
+                num2 = Math.floor(Math.random() * num1) + 1;
+            }
+            
+            gameState = {
+                ...gameState,
+                num1,
+                num2,
+                operation,
+                emoji: emojis[Math.floor(Math.random() * emojis.length)],
+                userAnswer: '',
+                feedback: '',
+                attempts: 0,
+                questionCount: gameState.questionCount + 1,
+            };
+            renderGame();
+        }
+
+        function updateAnswer(value) {
+            gameState.userAnswer = value.replace(/[^\d]/g, '');
+            renderGame();
+        }
+
+        function switchPlayer() {
+            gameState = {
+                ...gameState,
+                currentPlayer: gameState.currentPlayer === 1 ? 2 : 1,
+                turnQuestionsLeft: 3,
+                attempts: 0,
+            };
+        }
+
+        function checkAnswer() {
+            const correctAnswer = gameState.operation === '+' 
+                ? gameState.num1 + gameState.num2 
+                : gameState.num1 - gameState.num2;
+
+            if (parseInt(gameState.userAnswer, 10) === correctAnswer) {
+                gameState = {
+                    ...gameState,
+                    [gameState.currentPlayer === 1 ? 'player1' : 'player2']: {
+                        ...gameState[gameState.currentPlayer === 1 ? 'player1' : 'player2'],
+                        score: gameState[gameState.currentPlayer === 1 ? 'player1' : 'player2'].score + 1
+                    },
+                    feedback: 'WELL DONE!! 😃',
+                    turnQuestionsLeft: gameState.turnQuestionsLeft - 1,
+                    attempts: 0,
+                };
+
+                if (gameState.turnQuestionsLeft === 0) {
+                    switchPlayer();
+                    gameState.feedback += " Turn over, switching players!";
+                }
+
+                renderGame();
+                setTimeout(generateProblem, 1500);
+            } else {
+                gameState = {
+                    ...gameState,
+                    attempts: gameState.attempts + 1,
+                    feedback: gameState.attempts === 0 
+                        ? 'Wrong answer. You have one more try!' 
+                        : 'Sorry, that\'s incorrect. Switching players!',
+                };
+
+                if (gameState.attempts >= 2) {
+                    switchPlayer();
+                    renderGame();
+                    setTimeout(generateProblem, 1500);
+                } else {
+                    renderGame();
+                }
+            }
+        }
+
+        renderGame();
+    </script>
+</body>
+</html>
